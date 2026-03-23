@@ -47,33 +47,54 @@ class GraphAdj:
  
     def __str__(self):
         # Todo: 
-        return f"Matrix Multigraph {self.name} with the following params:\n \
-               Vertex: {self.IndexToVertex}\n, Matrix: \n {self.adjMatrix}"
+        rtrnString = f"{'Directed' if self.directed else 'Undirected'}\
+ Matrix Multigraph {self.name} with the following params:\
+\nVertex: {self.IndexToVertex}\nMatrix: \n"
+        # thanks Stackoverflow
+        rtrnString += ',    '.join(key for key in self.VertexToIndex.keys())
+        rtrnString += '\n'
+        for row_label, row in zip(self.VertexToIndex.keys(), self.adjMatrix):
+            rtrnString += '%s [%s]\n' % (row_label, ' '.join('%03s' % i for i in row))
+        # this is probably why java has a string builder class for it (no wonder)
+        return rtrnString
 
     def add_vertex(self, vertex: str):
         """
         Adds a vertex to the graph. Assumed a UTF-8 character (Python default).
            Resizes the numpy array.
-           Question: should I sort the array first? Or leave it be?
+           We're not bothering with resorting as you can't use bisect on a dictionary and
+           no way I'm doing binary search (log2 overhead is still overhead)
         """
         # add two vertexes in both dicts, resize numpy
         if (vertex) in self.VertexToIndex:
            print(f"Vertex {vertex} already in set")
-           return false
-        # probably should insert at last pos and then sort
-        self.adjMatrix = np.insert(self.adjMatrix, insert_pos, 0, axis=0)
-        self.adjMatrix = np.insert(self.adjMatrix, insert_pos, 0, axis=1) 
+           return false     
+        # probably should insert at last pos 
+        lastIndex = len(self.VertexToIndex)
+        self.IndexToVertex[lastIndex] = vertex
+        self.VertexToIndex[vertex] = lastIndex
+        self.adjMatrix = np.insert(self.adjMatrix, lastIndex, 0, axis=0)
+        self.adjMatrix = np.insert(self.adjMatrix, lastIndex, 0, axis=1) 
         # entries are sorted
         
         # (add in lexical order)
         #self.adjMatrix =
-        np.c_[] 
 
     def remove_vertex(self, vertex: str):
         """
         Deletes a vertex. Drops col and row containing the vertex, 
            then updates the dicts by dropping the i -> v key first, then the i -> v()
         """
+
+        # find the vertex (errors out if not found)
+        pos = self.VertexToIndex[vertex]
+        # modify in place
+        self.adjMatrix = np.delete(self.adjMatrix, pos, 0)  # delete third row of B
+        self.adjMatrix = np.delete(self.adjMatrix, pos, 1)  # delete third row of B
+        # drop the dict keys
+        del self.VertexToIndex[vertex]
+        del self.IndexToVertex[pos]
+        
 
     def add_edge(self, edge: tuple):
         """
@@ -82,10 +103,13 @@ class GraphAdj:
         # Check whether this is a tuple
         if type(edge) is tuple:
            a, b = edge
+           c, d = self.VertexToIndex[a], self.VertexToIndex[b]
            # rewrite
            if a not in self.VertexToIndex or b not in self.VertexToIndex:
-              raise KeyError(f"Not in the list of verticies")
-           self.adjMatrix[a, b] += 1
+              raise KeyError(f"{a} or {b} is not in the list of vertexes")
+           self.adjMatrix[c, d] += 1
+           if not self.directed:
+              self.adjMatrix[d, c] += 1
         else:
            raise TypeError(f"Bad Type: Edge is a {edge}")
 
@@ -96,10 +120,14 @@ class GraphAdj:
             there are no such edges (0).
         """
         #try:
-        if (self.adjMatrix[edge[0], edge[1]] > 0):
-           self.adjMatrix[edge[0], edge[1]] -= 1
+        a, b  = edge
+        c, d  = self.VertexToIndex[a], self.VertexToIndex[b]
+        if (self.adjMatrix[c, d] > 0):
+           self.adjMatrix[c, d] -= 1
            if not self.directed:
-              self.adjMatrix[edge[1], edge[0]] -= 1
+              self.adjMatrix[d, c] -= 1
+           else:
+              raise KeyError(f"Edge {edge} doesn't exist.")
         
        
 
@@ -111,7 +139,12 @@ class GraphAdj:
         
 
 
+    def count_nCycles(self, num: int) -> int:
+        """
+        Count Cycles in a graph. Does matrix multiplication M^num.
+        """
 
+# Directed tests
 newGraph = GraphAdj({'a', 'b'}, [('a', 'b',), ('a', 'b')], name = "Example")        
 print(newGraph)
 
@@ -122,10 +155,33 @@ print(newGraph)
 newGraph = GraphAdj({'a', 'b', 'c'}, [('a', 'b',), ('a', 'b'), ('a', 'c'), ('a', 'd')], name = "Example")        
 print(newGraph)
 
-#newGraph.add_vertex("z")
-# print(newGraph)
-#newGraph.add_edge(("b", "z"))
-#print(newGraph)
+newGraph.add_vertex("z")
+print(newGraph)
+
+newGraph.add_edge(("b", "z"))
+print(newGraph)
+
+
+# Undirected tests
+
+newGraph = GraphAdj({'a', 'b'}, [('a', 'b',), ('a', 'b')], name = "Example", directed=False)        
+print(newGraph)
+newGraph = GraphAdj({'a', 'b', 'c', 'd'}, [('a', 'b',), ('a', 'b'), ('a', 'c'), ('a', 'd')], name = "Example", directed=False)        
+print(newGraph)
+
+newGraph.add_vertex("z")
+print(newGraph)
+
+newGraph.add_edge(("b", "z"))
+print(newGraph)
+
+newGraph.remove_edge(("a", "b"))
+print(newGraph)
+
+newGraph.remove_vertex("b")
+print(newGraph)
+
+
 #newGraph.add_edge(("z", "y")) #errors out on purpose
 #newGraph.remove_edge(("a", "b"))
 #print(newGraph)
