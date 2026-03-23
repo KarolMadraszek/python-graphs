@@ -64,8 +64,18 @@ class Graph:
         if vertex not in self.vertex:
            raise KeyError("Vertex not in set")
         else:
-           del self.adjList[vertex]
-           self.vertex.remove(vertex)
+           if self.directed:
+               del self.adjList[vertex]
+           else:
+               #loop through all of the edges (u, v) to remove edges from
+               # all adjacent vertex v, then remove the final dict
+               # this way we are not iterating over the object we are modifying
+               for u, v in self.adjList[vertex]:
+                   # remove the last one added
+                   v.remove((v, u))
+               del self.adjList[vertex]
+         
+        self.vertex.remove(vertex)
 
     def add_edge(self, edge: tuple):
         """
