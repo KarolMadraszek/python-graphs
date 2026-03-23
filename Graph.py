@@ -36,7 +36,9 @@ class Graph:
                print(f"{u} or {v} not in set, skipping...")
             else:
                self.adjList[u].append((u, v))
-        #self.edges = edges
+               if not self.directed:
+                   self.adjList[v].append((v, u))
+        
         print(self.adjList)
  
     def __str__(self):
@@ -71,10 +73,13 @@ class Graph:
         """
         # Check whether this is a tuple
         if type(edge) is tuple:
-           a, b = edge
-           if a not in self.vertex or b not in self.vertex:
-              raise KeyError(f"{a} or {b} not in the list of verticies")
-           self.adjList[a].append((a, b))
+            a, b = edge
+            if a not in self.vertex or b not in self.vertex:
+                raise KeyError(f"{a} or {b} not in the list of verticies")
+            self.adjList[a].append((a, b))
+            if not self.directed:
+                self.adjList[b].append((b, a))
+        
         else:
            raise TypeError(f"Bad Type: {edge} is", edge)
 
@@ -83,7 +88,10 @@ class Graph:
         """
         Removes an edge. Throws an error if there is no such edge.
         """
-        self.adjList[edge[0]].remove(edge)
+        a, b = edge
+        self.adjList[a].remove((a, b))
+        if not self.directed:
+            self.adjList[b].remove((b, a))
 
     def to_adj(self):
         """
