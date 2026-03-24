@@ -104,7 +104,7 @@ class GraphAdj:
         if type(edge) is tuple:
            a, b = edge
            c, d = self.VertexToIndex[a], self.VertexToIndex[b]
-           # rewrite
+           # the above should be its own method for clarity but this will do
            if a not in self.VertexToIndex or b not in self.VertexToIndex:
               raise KeyError(f"{a} or {b} is not in the list of vertexes")
            self.adjMatrix[c, d] += 1
@@ -139,10 +139,23 @@ class GraphAdj:
         
 
 
-    def count_nCycles(self, num: int) -> int:
+    def count_nCycles(self, edge:tuple, n:int) -> int:
         """
         Count Cycles in a graph. Does matrix multiplication M^num.
         """
+        # Slight error checking before an expensive $$$ operation
+        a, b = edge
+        c, d = self.VertexToIndex[a], self.VertexToIndex[b]
+        if a not in self.VertexToIndex or b not in self.VertexToIndex:
+            raise KeyError(f"{a} or {b} is not in the list of vertexes")
+        temp = np.linalg.matrix_power(self.adjMatrix, n);
+        # lookup
+        # this could be better if it used the string builder method
+        # via an argument but again
+        # this will do
+        #print(temp)
+        return temp[c, d]
+
 
 # Directed tests
 newGraph = GraphAdj({'a', 'b'}, [('a', 'b',), ('a', 'b')], name = "Example")        
@@ -181,6 +194,13 @@ print(newGraph)
 newGraph.remove_vertex("b")
 print(newGraph)
 
+# At this point I should be using pytest...
+# lecture example
+
+M = GraphAdj({'a', 'b', 'c', 'd'}, [('a', 'b',), ('a', 'c'), ('a', 'd'), ('b', 'c'), ('c', 'd')], name = "Lecture", directed=False)        
+print(M)
+assert(M.count_nCycles(('a', 'c'), 2) == 2, "Should be 2")
+assert(M.count_nCycles(('a', 'c'), 3) == 5, "Should be 5")
 
 #newGraph.add_edge(("z", "y")) #errors out on purpose
 #newGraph.remove_edge(("a", "b"))

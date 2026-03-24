@@ -1,3 +1,5 @@
+import time
+
 class Graph:
     """
     (Un) Directed Multigraph class. Uses adjacency lists by default.
@@ -35,9 +37,9 @@ class Graph:
             if u not in self.vertex or v not in self.vertex:
                print(f"{u} or {v} not in set, skipping...")
             else:
-               self.adjList[u].append((u, v))
+               self.adjList[u].append(v)
                if not self.directed:
-                   self.adjList[v].append((v, u))
+                   self.adjList[v].append(u)
         
         print(self.adjList)
  
@@ -59,20 +61,35 @@ class Graph:
 
     def remove_vertex(self, vertex: str):
         """
-        Deletes a vertex. Deletes all edges O(V)
+        Deletes a vertex. Deletes all edges O(V) for undirected and O(V²)
+        for indirected graphs.
         """
         if vertex not in self.vertex:
            raise KeyError("Vertex not in set")
         else:
            if self.directed:
-               del self.adjList[vertex]
+              # unfortunately we have to traverse the entire list to check
+              # for references
+              #t1 = time.perf_counter_ns()
+              # a simple loop takes only 3-5us - list comp about 5-7 us
+              for key in self.adjList:
+                  for v in self.adjList[key]:
+                      if (v == vertex):
+                          self.adjList[key].remove(v)
+                  #self.adjList[key] = [v for v in self.adjList[key] if v != vertex]
+                  #print(temp)
+              #t2 = time.perf_counter_ns()
+              #print(f"time:", t2 - t1)
+                      
+              del self.adjList[vertex]
            else:
                #loop through all of the edges (u, v) to remove edges from
                # all adjacent vertex v, then remove the final dict
                # this way we are not iterating over the object we are modifying
-               for u, v in self.adjList[vertex]:
-                   # remove the last one added
-                   v.remove((v, u))
+               # keeping this linear (O(V))
+               for u in self.adjList[vertex]:
+                   # reverse lookup
+                   self.adjList[u].remove(vertex)
                del self.adjList[vertex]
          
         self.vertex.remove(vertex)
@@ -86,9 +103,9 @@ class Graph:
             a, b = edge
             if a not in self.vertex or b not in self.vertex:
                 raise KeyError(f"{a} or {b} not in the list of verticies")
-            self.adjList[a].append((a, b))
+            self.adjList[a].append(b)
             if not self.directed:
-                self.adjList[b].append((b, a))
+                self.adjList[b].append(a)
         
         else:
            raise TypeError(f"Bad Type: {edge} is", edge)
@@ -99,9 +116,9 @@ class Graph:
         Removes an edge. Throws an error if there is no such edge.
         """
         a, b = edge
-        self.adjList[a].remove((a, b))
+        self.adjList[a].remove(b)
         if not self.directed:
-            self.adjList[b].remove((b, a))
+            self.adjList[b].remove(a)
 
     def to_adj(self):
         """
@@ -111,7 +128,7 @@ class Graph:
         
 
 
-
+# directed
 newGraph = Graph({'a', 'b'}, [('a', 'b',), ('a', 'b')], name = "Example")        
 print(newGraph)
 newGraph.add_vertex("z")
